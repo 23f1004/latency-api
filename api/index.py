@@ -19,7 +19,7 @@ CORS_HEADERS = {
 async def add_cors(request: Request, call_next):
     # Answer browser "preflight" checks immediately
     if request.method == "OPTIONS":
-        return Response(status_code=204, headers=CORS_HEADERS)
+          return Response(content="", status_code=200, headers=CORS_HEADERS)
     try:
         response = await call_next(request)
     except Exception as e:
