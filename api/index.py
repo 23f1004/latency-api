@@ -2,21 +2,34 @@ import json
 from pathlib import Path
 from typing import List
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Request, Response
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 app = FastAPI()
 
-# CORS: allow any website to call this endpoint
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+CORS_HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+    "Access-Control-Allow-Headers": "*",
+}
 
-# Load the telemetry data once
+
+@app.middleware("http")
+async def add_cors(request: Request, call_next):
+    # Answer browser "preflight" checks immediately
+    if request.method == "OPTIONS":
+        return Response(status_code=204, headers=CORS_HEADERS)
+    try:
+        response = await call_next(request)
+    except Exception as e:
+        response = JSONResponse({"error": str(e)}, status_code=500)
+    # Add the CORS headers to EVERY response, even errors
+    for k, v in CORS_HEADERS.items():
+        response.headers[k] = v
+    return response
+
+
 with open(Path(__file__).parent / "q-vercel-latency.json") as f:
     DATA = json.load(f)
 
